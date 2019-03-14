@@ -90,11 +90,13 @@
         declaration (like handle="1234/23") if placed before it. 
      -->
     <themes>
+        <!-- Example configuration -->
+        <theme name="Mirage 2" regex=".*" path="Mirage2/" />
         <!-- <theme name="Test Theme 1" handle="123456789/1" path="theme1/"/>    -->
         <!-- <theme name="Test Theme 2" regex="community-list" path="theme2/"/> -->
 
         <!-- Mirage theme, @mire contributed theme, default since DSpace 3.0 -->
-        <theme name="Atmire Mirage Theme" regex=".*" path="Mirage/" />
+        <!-- <theme name="Atmire Mirage Theme" regex=".*" path="Mirage/" /> -->
 
         <!-- <theme name="Atmire Mirage2 Theme" regex=".*" path="Mirage2/" /> -->
         <!-- <theme name="Default Reference Theme" regex=".*" path="Reference/" /> -->
