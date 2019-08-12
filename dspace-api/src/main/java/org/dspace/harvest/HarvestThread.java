@@ -48,6 +48,8 @@ public class HarvestThread extends Thread {
         HarvestedCollection hc = null;
         try {
             context = new Context();
+            String harvestAdminParam = ConfigurationManager.getProperty("oai", "harvester.eperson");
+            context.setCurrentUser(EPersonServiceFactory.getInstance().getEPersonService().findByEmail(context, harvestAdminParam));
             dso = collectionService.find(context, collectionId);
             hc = harvestedCollectionService.find(context, dso);
             try {
