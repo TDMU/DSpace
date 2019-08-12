@@ -273,6 +273,19 @@
         <xsl:if test="dim:field[@element='identifier' and @qualifier='uri' and descendant::text()]">
             <div class="simple-item-view-uri item-page-field-wrapper table">
                 <h5><i18n:text>xmlui.dri2xhtml.METS-1.0.item-uri</i18n:text></h5>
+                <xsl:for-each select="dim:field[@element='identifier']">
+                    <xsl:if test="contains(./node(), 'ojs.')">
+                        <span>
+                            <a>
+                                <xsl:attribute name="href">
+                                    <xsl:copy-of select="./node()"/>
+                                </xsl:attribute>
+                                <xsl:copy-of select="./node()"/>
+                            </a>
+                        </span>
+                        <br/>
+                    </xsl:if>
+                </xsl:for-each>
                 <span>
                     <xsl:for-each select="dim:field[@element='identifier' and @qualifier='uri']">
                         <a>
