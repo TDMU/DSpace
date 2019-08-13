@@ -2,8 +2,9 @@
 <document xmlns="http://di.tamu.edu/DRI/1.0/" xmlns:i18n="http://apache.org/cocoon/i18n/2.1" version="1.1">
 <body>
 <div id="file.news.div.news" n="news" rend="primary">
-<head>DSpace Repository</head>
-<p>TDMU.</p>
+<head>TNMU Scientific and Media Repository</head>
+<p><xref target="https://www.tdmu.edu.ua">I.Ya. Horbachevsky Ternopil National Medical University main site</xref></p>
+<p><xref target="https://docs.google.com/document/d/1mzIB5PRni0rIxx1RHQo1aawzyQi6Z6Z-wKqVWSC__7o/edit#heading=h.63cankwsza28">Інструкція по створенню подання для публікації електронних документів в репозиторії ТНМУ на основі ІС DSpace (необхідна авторизація)</xref></p>
 </div>
 </body>
 <options/>
