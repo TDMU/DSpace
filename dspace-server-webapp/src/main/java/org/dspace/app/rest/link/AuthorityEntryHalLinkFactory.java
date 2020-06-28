@@ -7,7 +7,7 @@
  */
 package org.dspace.app.rest.link;
 
-import static org.springframework.hateoas.mvc.ControllerLinkBuilder.linkTo;
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
 
 import java.util.LinkedList;
 
@@ -18,6 +18,7 @@ import org.dspace.app.rest.model.AuthorityRest;
 import org.dspace.app.rest.model.hateoas.AuthorityEntryResource;
 import org.dspace.app.rest.utils.AuthorityUtils;
 import org.springframework.data.domain.Pageable;
+import org.springframework.hateoas.IanaLinkRelations;
 import org.springframework.hateoas.Link;
 import org.springframework.stereotype.Component;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -41,12 +42,16 @@ public class AuthorityEntryHalLinkFactory extends HalLinkFactory<AuthorityEntryR
                         .findRel(null, null, AuthorityRest.CATEGORY,
                                  English.plural(AuthorityRest.NAME),
                                  entry.getAuthorityName() + "/" + AuthorityRest.ENTRY,
-                                 entry.getOtherInformation().get(AuthorityUtils.RESERVED_KEYMAP_PARENT), null, null,
-                                 null)).toUriComponentsBuilder();
+                                 entry.getOtherInformation().get(AuthorityUtils.RESERVED_KEYMAP_PARENT), null, null))
+                        .toUriComponentsBuilder();
 
-                list.add(buildLink(uriComponentsBuilder.build().toString(), AuthorityUtils.RESERVED_KEYMAP_PARENT));
+                list.add(buildLink(AuthorityUtils.RESERVED_KEYMAP_PARENT, uriComponentsBuilder.build().toString()));
             }
         }
+        String selfLinkString = linkTo(
+            getMethodOn().findOne(entry.getCategory(), English.plural(entry.getType()), entry.getAuthorityName()))
+            .toUriComponentsBuilder().build().toString() + "/entryValues/" + entry.getId();
+        list.add(buildLink(IanaLinkRelations.SELF.value(), selfLinkString));
     }
 
     protected Class<RestResourceController> getControllerClass() {

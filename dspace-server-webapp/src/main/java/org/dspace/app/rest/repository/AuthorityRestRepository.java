@@ -8,19 +8,24 @@
 package org.dspace.app.rest.repository;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 
+import org.dspace.app.rest.DiscoverableEndpointsService;
 import org.dspace.app.rest.model.AuthorityRest;
-import org.dspace.app.rest.model.hateoas.AuthorityResource;
+import org.dspace.app.rest.model.AuthorizationRest;
+import org.dspace.app.rest.projection.Projection;
 import org.dspace.app.rest.utils.AuthorityUtils;
 import org.dspace.content.authority.ChoiceAuthority;
 import org.dspace.content.authority.service.ChoiceAuthorityService;
 import org.dspace.core.Context;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.hateoas.Link;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Component;
 
@@ -30,7 +35,8 @@ import org.springframework.stereotype.Component;
  * @author Luigi Andrea Pascarelli (luigiandrea.pascarelli at 4science.it)
  */
 @Component(AuthorityRest.CATEGORY + "." + AuthorityRest.NAME)
-public class AuthorityRestRepository extends DSpaceRestRepository<AuthorityRest, String> {
+public class AuthorityRestRepository extends DSpaceRestRepository<AuthorityRest, String>
+                                     implements InitializingBean {
 
     @Autowired
     private ChoiceAuthorityService cas;
@@ -38,25 +44,28 @@ public class AuthorityRestRepository extends DSpaceRestRepository<AuthorityRest,
     @Autowired
     private AuthorityUtils authorityUtils;
 
+    @Autowired
+    DiscoverableEndpointsService discoverableEndpointsService;
+
     @PreAuthorize("hasAuthority('AUTHENTICATED')")
     @Override
     public AuthorityRest findOne(Context context, String name) {
         ChoiceAuthority source = cas.getChoiceAuthorityByAuthorityName(name);
-        AuthorityRest result = authorityUtils.convertAuthority(source, name);
-        return result;
+        return authorityUtils.convertAuthority(source, name, utils.obtainProjection());
     }
 
     @PreAuthorize("hasAuthority('AUTHENTICATED')")
     @Override
     public Page<AuthorityRest> findAll(Context context, Pageable pageable) {
         Set<String> authoritiesName = cas.getChoiceAuthoritiesNames();
-        List<AuthorityRest> results = new ArrayList<AuthorityRest>();
+        List<AuthorityRest> results = new ArrayList<>();
+        Projection projection = utils.obtainProjection();
         for (String authorityName : authoritiesName) {
             ChoiceAuthority source = cas.getChoiceAuthorityByAuthorityName(authorityName);
-            AuthorityRest result = authorityUtils.convertAuthority(source, authorityName);
+            AuthorityRest result = authorityUtils.convertAuthority(source, authorityName, projection);
             results.add(result);
         }
-        return new PageImpl<AuthorityRest>(results, pageable, results.size());
+        return new PageImpl<>(results, pageable, results.size());
     }
 
     @Override
@@ -65,8 +74,9 @@ public class AuthorityRestRepository extends DSpaceRestRepository<AuthorityRest,
     }
 
     @Override
-    public AuthorityResource wrapResource(AuthorityRest model, String... rels) {
-        return new AuthorityResource(model, utils, rels);
+    public void afterPropertiesSet() throws Exception {
+        discoverableEndpointsService.register(this, Arrays.asList(
+                new Link("/api/" + AuthorizationRest.CATEGORY + "/" + AuthorizationRest.NAME + "/search",
+                        AuthorizationRest.NAME + "-search")));
     }
-
 }

@@ -10,24 +10,27 @@ package org.dspace.app.rest.test;
 import static org.junit.Assert.fail;
 
 import java.sql.SQLException;
-import java.util.Arrays;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.dspace.app.launcher.ScriptLauncher;
 import org.dspace.app.rest.builder.AbstractBuilder;
+import org.dspace.app.scripts.handler.impl.TestDSpaceRunnableHandler;
+import org.dspace.authority.AuthoritySearchService;
+import org.dspace.authority.MockAuthoritySolrServiceImpl;
 import org.dspace.authorize.AuthorizeException;
 import org.dspace.content.Community;
 import org.dspace.core.Context;
 import org.dspace.core.I18nUtil;
-import org.dspace.discovery.MockSolrServiceImpl;
-import org.dspace.discovery.SearchService;
+import org.dspace.discovery.MockSolrSearchCore;
+import org.dspace.discovery.SolrSearchCore;
 import org.dspace.eperson.EPerson;
 import org.dspace.eperson.Group;
 import org.dspace.eperson.factory.EPersonServiceFactory;
 import org.dspace.eperson.service.EPersonService;
 import org.dspace.eperson.service.GroupService;
 import org.dspace.services.factory.DSpaceServicesFactory;
+import org.dspace.statistics.MockSolrLoggerServiceImpl;
 import org.dspace.storage.rdbms.DatabaseUtils;
 import org.jdom.Document;
 import org.junit.After;
@@ -42,7 +45,7 @@ public class AbstractIntegrationTestWithDatabase extends AbstractDSpaceIntegrati
      * log4j category
      */
     private static final Logger log = LogManager
-            .getLogger(AbstractIntegrationTestWithDatabase.class);
+        .getLogger(AbstractIntegrationTestWithDatabase.class);
 
     /**
      * Context mock object to use in the tests.
@@ -179,11 +182,20 @@ public class AbstractIntegrationTestWithDatabase extends AbstractDSpaceIntegrati
             cleanupContext();
 
             // Clear the search core.
-            MockSolrServiceImpl searchService = DSpaceServicesFactory.getInstance()
+            MockSolrSearchCore searchService = DSpaceServicesFactory.getInstance()
                     .getServiceManager()
-                    .getServiceByName(SearchService.class.getName(), MockSolrServiceImpl.class);
+                    .getServiceByName(SolrSearchCore.class.getName(), MockSolrSearchCore.class);
             searchService.reset();
 
+            MockSolrLoggerServiceImpl statisticsService = DSpaceServicesFactory.getInstance()
+                    .getServiceManager()
+                    .getServiceByName("solrLoggerService", MockSolrLoggerServiceImpl.class);
+            statisticsService.reset();
+
+            MockAuthoritySolrServiceImpl authorityService = DSpaceServicesFactory.getInstance()
+                    .getServiceManager()
+                    .getServiceByName(AuthoritySearchService.class.getName(), MockAuthoritySolrServiceImpl.class);
+            authorityService.reset();
             // Reload our ConfigurationService (to reset configs to defaults again)
             DSpaceServicesFactory.getInstance().getConfigurationService().reloadConfig();
 
@@ -210,8 +222,14 @@ public class AbstractIntegrationTestWithDatabase extends AbstractDSpaceIntegrati
         }
     }
 
-    public void runDSpaceScript(String... args) throws Exception {
-        int status = 0;
+    /**
+     * Execute the given command and return the exit code.
+     *
+     * @param args the args to use for the script.
+     * @return the status, 0 if success, non-zero otherwise.
+     * @throws Exception if there's an error cleaning up after running the command.
+     */
+    public int runDSpaceScript(String... args) throws Exception {
         try {
             // Load up the ScriptLauncher's configuration
             Document commandConfigs = ScriptLauncher.getConfig(kernelImpl);
@@ -222,19 +240,17 @@ public class AbstractIntegrationTestWithDatabase extends AbstractDSpaceIntegrati
             }
 
             // Look up command in the configuration, and execute.
-            ScriptLauncher.runOneCommand(commandConfigs, args, kernelImpl);
-
-
-        } catch (ExitException e) {
-            status = e.getStatus();
-        }
-
-        if (status != 0) {
-            log.error("Failed to run script " + Arrays.toString(args));
-        }
-
-        if (!context.isValid()) {
-            setUp();
+            TestDSpaceRunnableHandler testDSpaceRunnableHandler = new TestDSpaceRunnableHandler();
+            int status =  ScriptLauncher.handleScript(args, commandConfigs, testDSpaceRunnableHandler, kernelImpl);
+            if (testDSpaceRunnableHandler.getException() != null) {
+                throw testDSpaceRunnableHandler.getException();
+            } else {
+                return status;
+            }
+        } finally {
+            if (!context.isValid()) {
+                setUp();
+            }
         }
     }
 }

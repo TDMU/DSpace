@@ -23,8 +23,10 @@ import java.util.concurrent.atomic.AtomicReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.dspace.app.rest.builder.MetadataSchemaBuilder;
 import org.dspace.app.rest.converter.MetadataSchemaConverter;
+import org.dspace.app.rest.matcher.HalMatcher;
 import org.dspace.app.rest.matcher.MetadataschemaMatcher;
 import org.dspace.app.rest.model.MetadataSchemaRest;
+import org.dspace.app.rest.projection.Projection;
 import org.dspace.app.rest.test.AbstractControllerIntegrationTest;
 import org.dspace.content.MetadataSchema;
 import org.hamcrest.Matchers;
@@ -44,9 +46,9 @@ public class MetadataSchemaRestRepositoryIT extends AbstractControllerIntegratio
     private static final String TEST_NAME_UPDATED = "testSchemaNameUpdated";
     private static final String TEST_NAMESPACE_UPDATED = "testSchemaNameSpaceUpdated";
 
-    @Autowired
-    MetadataSchemaConverter metadataSchemaConverter;
 
+    @Autowired
+    private MetadataSchemaConverter metadataSchemaConverter;
     @Test
     public void findAll() throws Exception {
 
@@ -88,7 +90,7 @@ public class MetadataSchemaRestRepositoryIT extends AbstractControllerIntegratio
                                                              .build();
         context.restoreAuthSystemState();
 
-        MetadataSchemaRest metadataSchemaRest = metadataSchemaConverter.fromModel(metadataSchema);
+        MetadataSchemaRest metadataSchemaRest = metadataSchemaConverter.convert(metadataSchema, Projection.DEFAULT);
         metadataSchemaRest.setPrefix(TEST_NAME);
         metadataSchemaRest.setNamespace(TEST_NAMESPACE);
 
@@ -96,16 +98,21 @@ public class MetadataSchemaRestRepositoryIT extends AbstractControllerIntegratio
         AtomicReference<Integer> idRef = new AtomicReference<>();
 
 
+        try {
         getClient(authToken)
                 .perform(post("/api/core/metadataschemas")
                         .content(new ObjectMapper().writeValueAsBytes(metadataSchemaRest))
                         .contentType(contentType))
                 .andExpect(status().isCreated())
+                .andExpect(jsonPath("$", HalMatcher.matchNoEmbeds()))
                 .andDo(result -> idRef.set(read(result.getResponse().getContentAsString(), "$.id")));
 
         getClient().perform(get("/api/core/metadataschemas/" + idRef.get()))
                    .andExpect(status().isOk())
                    .andExpect(jsonPath("$", MetadataschemaMatcher.matchEntry(TEST_NAME, TEST_NAMESPACE)));
+        } finally {
+            MetadataSchemaBuilder.deleteMetadataSchema(idRef.get());
+        }
     }
 
     @Test

@@ -19,6 +19,8 @@ import org.dspace.content.Community;
 import org.dspace.content.MetadataSchemaEnum;
 import org.dspace.content.service.DSpaceObjectService;
 import org.dspace.core.Context;
+import org.dspace.eperson.EPerson;
+import org.dspace.eperson.Group;
 
 /**
  * Builder to construct Community objects
@@ -63,10 +65,37 @@ public class CommunityBuilder extends AbstractDSpaceObjectBuilder<Community> {
         return setMetadataSingleValue(community, MetadataSchemaEnum.DC.getName(), "title", null, communityName);
     }
 
+    public CommunityBuilder withTitle(final String communityTitle) {
+        return addMetadataValue(community, MetadataSchemaEnum.DC.getName(), "title", null, communityTitle);
+    }
+
     public CommunityBuilder withLogo(String content) throws AuthorizeException, IOException, SQLException {
         try (InputStream is = IOUtils.toInputStream(content, CharEncoding.UTF_8)) {
             communityService.setLogo(context, community, is);
         }
+        return this;
+    }
+
+    /**
+     * Create an admin group for the community with the specified members
+     *
+     * @param members epersons to add to the admin group
+     * @return this builder
+     * @throws SQLException
+     * @throws AuthorizeException
+     */
+    public CommunityBuilder withAdminGroup(EPerson... members) throws SQLException, AuthorizeException {
+        Group g = communityService.createAdministrators(context, community);
+        for (EPerson e : members) {
+            groupService.addMember(context, g, e);
+        }
+        groupService.update(context, g);
+        return this;
+    }
+
+    public CommunityBuilder addParentCommunity(final Context context, final Community parent)
+        throws SQLException, AuthorizeException {
+        communityService.addSubcommunity(context, parent, community);
         return this;
     }
 
@@ -86,7 +115,24 @@ public class CommunityBuilder extends AbstractDSpaceObjectBuilder<Community> {
 
     @Override
     public void cleanup() throws Exception {
-        delete(community);
+       try (Context c = new Context()) {
+            c.turnOffAuthorisationSystem();
+            // Ensure object and any related objects are reloaded before checking to see what needs cleanup
+            community = c.reloadEntity(community);
+            if (community != null) {
+                deleteAdminGroup(c);
+                delete(c, community);
+                c.complete();
+            }
+       }
+    }
+
+    private void deleteAdminGroup(Context c) throws SQLException, AuthorizeException, IOException {
+        Group group = community.getAdministrators();
+        if (group != null) {
+            communityService.removeAdministrators(c, community);
+            groupService.delete(c, group);
+        }
     }
 
     @Override
@@ -106,6 +152,11 @@ public class CommunityBuilder extends AbstractDSpaceObjectBuilder<Community> {
             Community community = communityService.find(c, uuid);
             if (community != null) {
                 try {
+                    Group adminGroup = community.getAdministrators();
+                    if (adminGroup != null) {
+                        communityService.removeAdministrators(c, community);
+                        groupService.delete(c, adminGroup);
+                    }
                     communityService.delete(c, community);
                 } catch (AuthorizeException e) {
                     // cannot occur, just wrap it to make the compiler happy

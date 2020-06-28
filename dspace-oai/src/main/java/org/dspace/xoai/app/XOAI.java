@@ -22,7 +22,6 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.UUID;
-
 import javax.xml.stream.XMLStreamException;
 
 import com.lyncode.xoai.dataprovider.exceptions.ConfigurationException;
@@ -56,6 +55,7 @@ import org.dspace.core.Constants;
 import org.dspace.core.Context;
 import org.dspace.services.ConfigurationService;
 import org.dspace.services.factory.DSpaceServicesFactory;
+import org.dspace.util.SolrUtils;
 import org.dspace.xoai.exceptions.CompilingException;
 import org.dspace.xoai.services.api.CollectionsService;
 import org.dspace.xoai.services.api.cache.XOAICacheService;
@@ -313,7 +313,9 @@ public class XOAI {
             }
             System.out.println("Total: " + i + " items");
             if (i > 0) {
-                server.add(list);
+                if (!list.isEmpty()) {
+                    server.add(list);
+                }
                 server.commit(true, true);
                 list.clear();
             }
@@ -413,7 +415,8 @@ public class XOAI {
          * relevant policy dates and the standard lastModified date and take the
          * most recent of those which have already passed.
          */
-        doc.addField("item.lastmodified", this.getMostRecentModificationDate(item));
+        doc.addField("item.lastmodified", SolrUtils.getDateFormatter()
+                .format(this.getMostRecentModificationDate(item)));
 
         if (item.getSubmitter() != null) {
             doc.addField("item.submitter", item.getSubmitter().getEmail());
@@ -442,6 +445,12 @@ public class XOAI {
 
         for (String f : getFileFormats(item)) {
             doc.addField("metadata.dc.format.mimetype", f);
+        }
+
+        // Message output before processing - for debugging purposes
+        if (verbose) {
+            println(String.format("Item %s with handle %s is about to be indexed",
+                    item.getID().toString(), handle));
         }
 
         ByteArrayOutputStream out = new ByteArrayOutputStream();

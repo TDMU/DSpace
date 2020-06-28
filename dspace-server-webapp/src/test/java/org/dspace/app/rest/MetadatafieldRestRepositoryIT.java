@@ -165,7 +165,7 @@ public class MetadatafieldRestRepositoryIT extends AbstractControllerIntegration
     public void findByNullSchema() throws Exception {
 
         getClient().perform(get("/api/core/metadatafields/search/bySchema"))
-                   .andExpect(status().isUnprocessableEntity());
+                   .andExpect(status().isBadRequest());
     }
 
     @Test
@@ -178,12 +178,13 @@ public class MetadatafieldRestRepositoryIT extends AbstractControllerIntegration
 
         String authToken = getAuthToken(admin.getEmail(), password);
         AtomicReference<Integer> idRef = new AtomicReference<>();
-
+        try {
         assertThat(metadataFieldService.findByElement(context, metadataSchema, ELEMENT, QUALIFIER), nullValue());
 
         getClient(authToken)
             .perform(post("/api/core/metadatafields")
                          .param("schemaId", metadataSchema.getID() + "")
+                         .param("projection", "full")
                          .content(new ObjectMapper().writeValueAsBytes(metadataFieldRest))
                          .contentType(contentType))
             .andExpect(status().isCreated())
@@ -193,6 +194,9 @@ public class MetadatafieldRestRepositoryIT extends AbstractControllerIntegration
                             .andExpect(status().isOk())
                             .andExpect(jsonPath("$", MetadataFieldMatcher.matchMetadataFieldByKeys(
                                 metadataSchema.getName(), "testElementForCreate", "testQualifierForCreate")));
+        } finally {
+            MetadataFieldBuilder.deleteMetadataField(idRef.get());
+        }
     }
 
     @Test

@@ -9,32 +9,29 @@ package org.dspace.app.rest.repository;
 
 import java.io.IOException;
 import java.sql.SQLException;
+import java.util.Arrays;
 import java.util.List;
-import java.util.Objects;
 import java.util.UUID;
 import javax.servlet.http.HttpServletRequest;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.StringUtils;
+import org.dspace.app.rest.DiscoverableEndpointsService;
 import org.dspace.app.rest.Parameter;
 import org.dspace.app.rest.SearchRestMethod;
-import org.dspace.app.rest.converter.EPersonConverter;
-import org.dspace.app.rest.converter.MetadataConverter;
-import org.dspace.app.rest.exception.RESTAuthorizationException;
 import org.dspace.app.rest.exception.UnprocessableEntityException;
 import org.dspace.app.rest.model.EPersonRest;
-import org.dspace.app.rest.model.hateoas.EPersonResource;
 import org.dspace.app.rest.model.patch.Patch;
-import org.dspace.app.rest.repository.patch.EPersonPatch;
 import org.dspace.authorize.AuthorizeException;
 import org.dspace.authorize.service.AuthorizeService;
 import org.dspace.core.Context;
 import org.dspace.eperson.EPerson;
 import org.dspace.eperson.service.EPersonService;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.hateoas.Link;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Component;
 
@@ -46,23 +43,20 @@ import org.springframework.stereotype.Component;
  */
 
 @Component(EPersonRest.CATEGORY + "." + EPersonRest.NAME)
-public class EPersonRestRepository extends DSpaceObjectRestRepository<EPerson, EPersonRest> {
+public class EPersonRestRepository extends DSpaceObjectRestRepository<EPerson, EPersonRest>
+                                   implements InitializingBean {
 
     @Autowired
     AuthorizeService authorizeService;
 
+    @Autowired
+    DiscoverableEndpointsService discoverableEndpointsService;
+
     private final EPersonService es;
 
-    @Autowired
-    MetadataConverter metadataConverter;
 
-    @Autowired
-    EPersonPatch epersonPatch;
-
-    public EPersonRestRepository(EPersonService dsoService,
-                                 EPersonConverter dsoConverter,
-                                 EPersonPatch dsoPatch) {
-        super(dsoService, dsoConverter, dsoPatch);
+    public EPersonRestRepository(EPersonService dsoService) {
+        super(dsoService);
         this.es = dsoService;
     }
 
@@ -97,7 +91,7 @@ public class EPersonRestRepository extends DSpaceObjectRestRepository<EPerson, E
             throw new RuntimeException(e.getMessage(), e);
         }
 
-        return dsoConverter.convert(eperson);
+        return converter.toRest(eperson, utils.obtainProjection());
     }
 
     @Override
@@ -112,52 +106,20 @@ public class EPersonRestRepository extends DSpaceObjectRestRepository<EPerson, E
         if (eperson == null) {
             return null;
         }
-        return dsoConverter.fromModel(eperson);
+        return converter.toRest(eperson, utils.obtainProjection());
     }
 
     @Override
     @PreAuthorize("hasAuthority('ADMIN')")
     public Page<EPersonRest> findAll(Context context, Pageable pageable) {
-        List<EPerson> epersons = null;
-        int total = 0;
         try {
-            if (!authorizeService.isAdmin(context)) {
-                throw new RESTAuthorizationException(
-                        "The EPerson collection endpoint is reserved to system administrators");
-            }
-            total = es.countTotal(context);
-            epersons = es.findAll(context, EPerson.EMAIL, pageable.getPageSize(), pageable.getOffset());
+            long total = es.countTotal(context);
+            List<EPerson> epersons = es.findAll(context, EPerson.EMAIL, pageable.getPageSize(),
+                    Math.toIntExact(pageable.getOffset()));
+            return converter.toRestPage(epersons, pageable, total, utils.obtainProjection());
         } catch (SQLException e) {
             throw new RuntimeException(e.getMessage(), e);
         }
-        Page<EPersonRest> page = new PageImpl<EPerson>(epersons, pageable, total).map(dsoConverter);
-        return page;
-    }
-
-    /**
-     * Find the epersons matching the query q parameter. The search is delegated to the
-     * {@link EPersonService#search(Context, String, int, int)} method
-     *
-     * @param q
-     *            is the *required* query string
-     * @param pageable
-     *            contains the pagination information
-     * @return a Page of EPersonRest instances matching the user query
-     */
-    @SearchRestMethod(name = "byName")
-    public Page<EPersonRest> findByName(@Parameter(value = "q", required = true) String q,
-            Pageable pageable) {
-        List<EPerson> epersons = null;
-        int total = 0;
-        try {
-            Context context = obtainContext();
-            epersons = es.search(context, q, pageable.getOffset(), pageable.getOffset() + pageable.getPageSize());
-            total = es.searchResultCount(context, q);
-        } catch (SQLException e) {
-            throw new RuntimeException(e.getMessage(), e);
-        }
-        Page<EPersonRest> page = new PageImpl<EPerson>(epersons, pageable, total).map(dsoConverter);
-        return page;
     }
 
     /**
@@ -166,8 +128,6 @@ public class EPersonRestRepository extends DSpaceObjectRestRepository<EPerson, E
      *
      * @param email
      *            is the *required* email address
-     * @param pageable
-     *            contains the pagination information
      * @return a Page of EPersonRest instances matching the user query
      */
     @SearchRestMethod(name = "byEmail")
@@ -182,7 +142,33 @@ public class EPersonRestRepository extends DSpaceObjectRestRepository<EPerson, E
         if (eperson == null) {
             return null;
         }
-        return dsoConverter.fromModel(eperson);
+        return converter.toRest(eperson, utils.obtainProjection());
+    }
+
+    /**
+     * Find the epersons matching the query parameter. The search is delegated to the
+     * {@link EPersonService#search(Context, String, int, int)} method
+     *
+     * @param query
+     *            is the *required* query string
+     * @param pageable
+     *            contains the pagination information
+     * @return a Page of EPersonRest instances matching the user query
+     */
+    @PreAuthorize("hasAuthority('ADMIN') || hasAuthority('MANAGE_ACCESS_GROUP')")
+    @SearchRestMethod(name = "byMetadata")
+    public Page<EPersonRest> findByMetadata(@Parameter(value = "query", required = true) String query,
+            Pageable pageable) {
+
+        try {
+            Context context = obtainContext();
+            long total = es.searchResultCount(context, query);
+            List<EPerson> epersons = es.search(context, query, Math.toIntExact(pageable.getOffset()),
+                                               Math.toIntExact(pageable.getOffset() + pageable.getPageSize()));
+            return converter.toRestPage(epersons, pageable, total, utils.obtainProjection());
+        } catch (SQLException e) {
+            throw new RuntimeException(e.getMessage(), e);
+        }
     }
 
     @Override
@@ -190,31 +176,6 @@ public class EPersonRestRepository extends DSpaceObjectRestRepository<EPerson, E
     protected void patch(Context context, HttpServletRequest request, String apiCategory, String model, UUID uuid,
                          Patch patch) throws AuthorizeException, SQLException {
         patchDSpaceObject(apiCategory, model, uuid, patch);
-    }
-
-    @Override
-    protected void updateDSpaceObject(EPerson ePerson, EPersonRest ePersonRest)
-            throws AuthorizeException, SQLException {
-        super.updateDSpaceObject(ePerson, ePersonRest);
-
-        Context context = obtainContext();
-        if (ePersonRest.getPassword() != null) {
-            es.setPassword(ePerson, ePersonRest.getPassword());
-        }
-        if (ePersonRest.isRequireCertificate() != ePerson.getRequireCertificate()) {
-            ePerson.setRequireCertificate(ePersonRest.isRequireCertificate());
-        }
-        if (ePersonRest.isCanLogIn() != ePerson.canLogIn()) {
-            ePerson.setCanLogIn(ePersonRest.isCanLogIn());
-        }
-        if (!Objects.equals(ePersonRest.getEmail(), ePerson.getEmail())) {
-            ePerson.setEmail(ePersonRest.getEmail());
-        }
-        if (!Objects.equals(ePersonRest.getNetid(), ePerson.getNetid())) {
-            ePerson.setNetid(ePersonRest.getNetid());
-        }
-
-        es.update(context, ePerson);
     }
 
     @Override
@@ -244,8 +205,8 @@ public class EPersonRestRepository extends DSpaceObjectRestRepository<EPerson, E
     }
 
     @Override
-    public EPersonResource wrapResource(EPersonRest eperson, String... rels) {
-        return new EPersonResource(eperson, utils, rels);
+    public void afterPropertiesSet() throws Exception {
+        discoverableEndpointsService.register(this, Arrays.asList(
+                new Link("/api/" + EPersonRest.CATEGORY + "/registrations", EPersonRest.NAME + "-registration")));
     }
-
 }

@@ -167,9 +167,12 @@ public class BrowsesResourceControllerIT extends AbstractControllerIntegrationTe
                                       .withSubject("ExtraEntry")
                                       .build();
 
+        context.restoreAuthSystemState();
+
         //** WHEN **
         //An anonymous user browses this endpoint to find which subjects are currently in the repository
-        getClient().perform(get("/api/discover/browses/subject/entries"))
+        getClient().perform(get("/api/discover/browses/subject/entries")
+                    .param("projection", "full"))
 
                    //** THEN **
                    //The status has to be 200
@@ -183,7 +186,7 @@ public class BrowsesResourceControllerIT extends AbstractControllerIntegrationTe
                    //Check the embedded resources and that they're sorted alphabetically
                    //Check that the subject matches as expected
                    //Verify that they're sorted alphabetically
-                   .andExpect(jsonPath("$._embedded.browseEntries",
+                   .andExpect(jsonPath("$._embedded.entries",
                                        contains(BrowseEntryResourceMatcher.matchBrowseEntry("AnotherTest", 1),
                                                 BrowseEntryResourceMatcher.matchBrowseEntry("ExtraEntry", 3),
                                                 BrowseEntryResourceMatcher.matchBrowseEntry("TestingForMore", 2)
@@ -204,7 +207,7 @@ public class BrowsesResourceControllerIT extends AbstractControllerIntegrationTe
                    //Check the embedded resources and that they're sorted alphabetically
                    //Check that the subject matches as expected
                    //Verify that they're sorted alphabetically
-                   .andExpect(jsonPath("$._embedded.browseEntries",
+                   .andExpect(jsonPath("$._embedded.entries",
                                        contains(BrowseEntryResourceMatcher.matchBrowseEntry("TestingForMore", 2),
                                                 BrowseEntryResourceMatcher.matchBrowseEntry("ExtraEntry", 3),
                                                 BrowseEntryResourceMatcher.matchBrowseEntry("AnotherTest", 1)
@@ -249,6 +252,8 @@ public class BrowsesResourceControllerIT extends AbstractControllerIntegrationTe
                                       .withAuthor("Smith, Maria").withAuthor("Doe, Jane")
                                       .withSubject("AnotherTest")
                                       .build();
+
+        context.restoreAuthSystemState();
 
         //** WHEN **
         //An anonymous user browses the items that correspond with the ExtraEntry subject query
@@ -363,23 +368,18 @@ public class BrowsesResourceControllerIT extends AbstractControllerIntegrationTe
                    //We expect the content type to be "application/hal+json;charset=UTF-8"
                    .andExpect(content().contentType(contentType))
 
-                   //We expect only the two public items and the embargoed item to be present
                    .andExpect(jsonPath("$.page.size", is(20)))
-                   .andExpect(jsonPath("$.page.totalElements", is(3)))
+                   .andExpect(jsonPath("$.page.totalElements", is(2)))
                    .andExpect(jsonPath("$.page.totalPages", is(1)))
                    .andExpect(jsonPath("$.page.number", is(0)))
 
-                   //Verify that the title of the public and embargoed items are present and sorted descending
                    .andExpect(jsonPath("$._embedded.items",
                                        contains(ItemMatcher.matchItemWithTitleAndDateIssued(publicItem2,
                                                                                             "Public item 2",
                                                                                             "2016-02-13"),
                                                 ItemMatcher.matchItemWithTitleAndDateIssued(publicItem1,
                                                                                             "Public item 1",
-                                                                                            "2017-10-17"),
-                                                ItemMatcher.matchItemWithTitleAndDateIssued(embargoedItem,
-                                                                                            "An embargoed publication",
-                                                                                            "2017-08-10"))))
+                                                                                            "2017-10-17"))))
 
                    //The private and internal items must not be present
                    .andExpect(jsonPath("$._embedded.items[*].metadata", Matchers.allOf(
@@ -416,10 +416,11 @@ public class BrowsesResourceControllerIT extends AbstractControllerIntegrationTe
 
         context.restoreAuthSystemState();
 
+
         //** WHEN **
         //An anonymous user browses the items in the Browse by item endpoint
         getClient().perform(get("/api/discover/browses/title/items"))
-               //** THEN **
+                   //** THEN **
                //The status has to be 200 OK
                .andExpect(status().isOk())
                //We expect the content type to be "application/hal+json;charset=UTF-8"
@@ -432,8 +433,6 @@ public class BrowsesResourceControllerIT extends AbstractControllerIntegrationTe
                // embedded items are already checked by other test, we focus on links here
                .andExpect(jsonPath("$._links.next.href", Matchers.containsString("/api/discover/browses/title/items?")))
                .andExpect(jsonPath("$._links.last.href", Matchers.containsString("/api/discover/browses/title/items?")))
-               .andExpect(
-                        jsonPath("$._links.first.href", Matchers.containsString("/api/discover/browses/title/items?")))
                .andExpect(jsonPath("$._links.self.href", Matchers.endsWith("/api/discover/browses/title/items")));
 
         //** WHEN **
@@ -453,8 +452,6 @@ public class BrowsesResourceControllerIT extends AbstractControllerIntegrationTe
                 .andExpect(jsonPath("$._links.next.href",
                         Matchers.containsString("/api/discover/browses/author/entries?")))
                 .andExpect(jsonPath("$._links.last.href",
-                        Matchers.containsString("/api/discover/browses/author/entries?")))
-                .andExpect(jsonPath("$._links.first.href",
                         Matchers.containsString("/api/discover/browses/author/entries?")))
                 .andExpect(jsonPath("$._links.self.href", Matchers.endsWith("/api/discover/browses/author/entries")));
     }
@@ -509,6 +506,8 @@ public class BrowsesResourceControllerIT extends AbstractControllerIntegrationTe
                                 .withTitle("Item 7")
                                 .withIssueDate("2016-01-12")
                                 .build();
+
+        context.restoreAuthSystemState();
 
         //** WHEN **
         //An anonymous user browses the items in the Browse by date issued endpoint
@@ -634,13 +633,16 @@ public class BrowsesResourceControllerIT extends AbstractControllerIntegrationTe
                                 .withSubject("Science Fiction")
                                 .build();
 
+        context.restoreAuthSystemState();
+
          // ---- BROWSES BY ENTRIES ----
 
         //** WHEN **
         //An anonymous user browses the entries in the Browse by Author endpoint
         //with startsWith set to U
         getClient().perform(get("/api/discover/browses/author/entries?startsWith=U")
-                                .param("size", "2"))
+                                .param("size", "2")
+                   .param("projection", "full"))
 
                    //** THEN **
                    //The status has to be 200 OK
@@ -654,7 +656,7 @@ public class BrowsesResourceControllerIT extends AbstractControllerIntegrationTe
                    .andExpect(jsonPath("$.page.number", is(0)))
 
                    //Verify that the index filters to the "Universe" entries and Counts 2 Items.
-                   .andExpect(jsonPath("$._embedded.browseEntries",
+                   .andExpect(jsonPath("$._embedded.entries",
                                        contains(BrowseEntryResourceMatcher.matchBrowseEntry("Universe", 2)
                                        )))
                    //Verify startsWith parameter is included in the links
@@ -678,7 +680,7 @@ public class BrowsesResourceControllerIT extends AbstractControllerIntegrationTe
                    .andExpect(jsonPath("$.page.number", is(0)))
 
                    //Verify that the index filters to the "Turing, Alan'" items.
-                   .andExpect(jsonPath("$._embedded.browseEntries",
+                   .andExpect(jsonPath("$._embedded.entries",
                                        contains(BrowseEntryResourceMatcher.matchBrowseEntry("Turing, Alan Mathison", 1)
                                        )))
                    //Verify that the startsWith paramater is included in the links
@@ -701,7 +703,7 @@ public class BrowsesResourceControllerIT extends AbstractControllerIntegrationTe
                    .andExpect(jsonPath("$.page.number", is(0)))
 
                    //Verify that the index filters to the "Computing'" items.
-                   .andExpect(jsonPath("$._embedded.browseEntries",
+                   .andExpect(jsonPath("$._embedded.entries",
                                        contains(BrowseEntryResourceMatcher.matchBrowseEntry("Computing", 3)
                                        )))
                    //Verify that the startsWith paramater is included in the links
@@ -773,8 +775,10 @@ public class BrowsesResourceControllerIT extends AbstractControllerIntegrationTe
                                 .withIssueDate("2029")
                                 .withSubject("Science Fiction")
                                 .build();
-        // ---- BROWSES BY ITEM ----
 
+        context.restoreAuthSystemState();
+
+        // ---- BROWSES BY ITEM ----
         //** WHEN **
         //An anonymous user browses the items in the Browse by date issued endpoint
         //with startsWith set to 1990
@@ -817,7 +821,7 @@ public class BrowsesResourceControllerIT extends AbstractControllerIntegrationTe
                    .andExpect(jsonPath("$.page.totalElements", is(7)))
                    //We expect to jump to page 2 in the index
                    .andExpect(jsonPath("$.page.number", is(2)))
-                   .andExpect(jsonPath("$._links.first.href", containsString("startsWith=T")))
+                   .andExpect(jsonPath("$._links.self.href", containsString("startsWith=T")))
 
                    //Verify that the index jumps to the "T-800" item.
                    .andExpect(jsonPath("$._embedded.items",
@@ -845,7 +849,7 @@ public class BrowsesResourceControllerIT extends AbstractControllerIntegrationTe
                    .andExpect(jsonPath("$.page.totalElements", is(3)))
                    //As this is is a small collection, we expect to go-to page 0
                    .andExpect(jsonPath("$.page.number", is(0)))
-                   .andExpect(jsonPath("$._links.first.href", containsString("startsWith=Blade")))
+                   .andExpect(jsonPath("$._links.self.href", containsString("startsWith=Blade")))
 
                    //Verify that the index jumps to the "Blade Runner" item.
                    .andExpect(jsonPath("$._embedded.items",
@@ -922,6 +926,8 @@ public class BrowsesResourceControllerIT extends AbstractControllerIntegrationTe
                                 .withSubject("Astronomy")
                                 .build();
 
+        context.restoreAuthSystemState();
+
         // ---- BROWSES BY ITEM ----
 
         //** WHEN **
@@ -941,7 +947,7 @@ public class BrowsesResourceControllerIT extends AbstractControllerIntegrationTe
                    //We expect to jump to page 1 of the index
                    .andExpect(jsonPath("$.page.number", is(2)))
                    .andExpect(jsonPath("$.page.size", is(2)))
-                   .andExpect(jsonPath("$._links.first.href", containsString("startsWith=1990")))
+                   .andExpect(jsonPath("$._links.self.href", containsString("startsWith=1990")))
 
                    //Verify that the index jumps to the "Zeta Reticuli" item.
                    .andExpect(jsonPath("$._embedded.items",

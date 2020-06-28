@@ -43,6 +43,12 @@ public class BitstreamBuilder extends AbstractDSpaceObjectBuilder<Bitstream> {
         return builder.create(context, item, is);
     }
 
+    public static BitstreamBuilder createBitstream(Context context, Bundle bundle, InputStream is)
+            throws SQLException, AuthorizeException, IOException {
+        BitstreamBuilder builder = new BitstreamBuilder(context);
+        return builder.create(context, bundle, is);
+    }
+
     private BitstreamBuilder create(Context context, Item item, InputStream is)
         throws SQLException, AuthorizeException, IOException {
         this.context = context;
@@ -54,6 +60,16 @@ public class BitstreamBuilder extends AbstractDSpaceObjectBuilder<Bitstream> {
 
         return this;
     }
+
+    private BitstreamBuilder create(Context context, Bundle bundle, InputStream is)
+            throws SQLException, AuthorizeException, IOException {
+        this.context = context;
+        this.item = bundle.getItems().get(0);
+        bitstream = bitstreamService.create(context, bundle, is);
+
+        return this;
+    }
+
 
     public BitstreamBuilder withName(String name) throws SQLException {
         bitstream.setName(context, name);
@@ -71,6 +87,20 @@ public class BitstreamBuilder extends AbstractDSpaceObjectBuilder<Bitstream> {
         if (bf != null) {
             bitstream.setFormat(context, bf);
         }
+
+        return this;
+    }
+
+    public BitstreamBuilder withFormat(String format) throws SQLException {
+
+        bitstreamService.addMetadata(context, bitstream, "dc", "format", null, null, format);
+
+        return this;
+    }
+
+    public BitstreamBuilder withProvenance(String provenance) throws SQLException {
+
+        bitstreamService.addMetadata(context, bitstream, "dc", "description", "provenance", null, provenance);
 
         return this;
     }
@@ -122,7 +152,15 @@ public class BitstreamBuilder extends AbstractDSpaceObjectBuilder<Bitstream> {
 
     @Override
     public void cleanup() throws Exception {
-        delete(bitstream);
+       try (Context c = new Context()) {
+            c.turnOffAuthorisationSystem();
+            // Ensure object and any related objects are reloaded before checking to see what needs cleanup
+            bitstream = c.reloadEntity(bitstream);
+            if (bitstream != null) {
+                delete(c, bitstream);
+                c.complete();
+            }
+        }
     }
 
     protected DSpaceObjectService<Bitstream> getService() {

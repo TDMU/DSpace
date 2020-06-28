@@ -10,7 +10,9 @@ package org.dspace.app.rest;
 import java.sql.SQLException;
 import java.util.Arrays;
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
+import org.dspace.app.rest.converter.ConverterService;
 import org.dspace.app.rest.converter.EPersonConverter;
 import org.dspace.app.rest.link.HalLinkService;
 import org.dspace.app.rest.model.AuthenticationStatusRest;
@@ -18,6 +20,8 @@ import org.dspace.app.rest.model.AuthnRest;
 import org.dspace.app.rest.model.EPersonRest;
 import org.dspace.app.rest.model.hateoas.AuthenticationStatusResource;
 import org.dspace.app.rest.model.hateoas.AuthnResource;
+import org.dspace.app.rest.projection.Projection;
+import org.dspace.app.rest.security.RestAuthenticationService;
 import org.dspace.app.rest.utils.ContextUtil;
 import org.dspace.app.rest.utils.Utils;
 import org.dspace.core.Context;
@@ -50,10 +54,16 @@ public class AuthenticationRestController implements InitializingBean {
     DiscoverableEndpointsService discoverableEndpointsService;
 
     @Autowired
+    private ConverterService converter;
+
+    @Autowired
     private EPersonConverter ePersonConverter;
 
     @Autowired
     private HalLinkService halLinkService;
+
+    @Autowired
+    private RestAuthenticationService restAuthenticationService;
 
     @Autowired
     private Utils utils;
@@ -65,24 +75,33 @@ public class AuthenticationRestController implements InitializingBean {
     }
 
     @RequestMapping(method = RequestMethod.GET)
-    public AuthnResource authn() throws SQLException {
-        AuthnResource authnResource = new AuthnResource(new AuthnRest(), utils);
-        halLinkService.addLinks(authnResource);
-        return authnResource;
+    public AuthnResource authn() {
+        AuthnRest authnRest = new AuthnRest();
+        authnRest.setProjection(utils.obtainProjection());
+        return converter.toResource(authnRest);
     }
 
     @RequestMapping(value = "/status", method = RequestMethod.GET)
-    public AuthenticationStatusResource status(HttpServletRequest request) throws SQLException {
+    public AuthenticationStatusResource status(HttpServletRequest request, HttpServletResponse response)
+            throws SQLException {
         Context context = ContextUtil.obtainContext(request);
         EPersonRest ePersonRest = null;
+        Projection projection = utils.obtainProjection();
         if (context.getCurrentUser() != null) {
-            ePersonRest = ePersonConverter.fromModelWithGroups(context, context.getCurrentUser());
+            ePersonRest = converter.toRest(context.getCurrentUser(), projection);
         }
 
-        AuthenticationStatusResource authenticationStatusResource = new AuthenticationStatusResource(
-            new AuthenticationStatusRest(ePersonRest), utils);
+        AuthenticationStatusRest authenticationStatusRest = new AuthenticationStatusRest(ePersonRest);
+        // Whether authentication status is false add WWW-Authenticate so client can retrieve the available
+        // authentication methods
+        if (!authenticationStatusRest.isAuthenticated()) {
+            String authenticateHeaderValue = restAuthenticationService
+                    .getWwwAuthenticateHeaderValue(request, response);
 
-        halLinkService.addLinks(authenticationStatusResource);
+            response.setHeader("WWW-Authenticate", authenticateHeaderValue);
+        }
+        authenticationStatusRest.setProjection(projection);
+        AuthenticationStatusResource authenticationStatusResource = converter.toResource(authenticationStatusRest);
 
         return authenticationStatusResource;
     }

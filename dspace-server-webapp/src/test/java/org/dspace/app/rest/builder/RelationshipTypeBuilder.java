@@ -37,14 +37,29 @@ public class RelationshipTypeBuilder extends AbstractBuilder<RelationshipType, R
 
     @Override
     public void cleanup() throws Exception {
-        context.turnOffAuthorisationSystem();
-        List<Relationship> byRelationshipType = relationshipService.findByRelationshipType(context, relationshipType);
-        for (Relationship relationship : byRelationshipType) {
-            relationshipService.delete(context, relationship);
+        try (Context c = new Context()) {
+            c.turnOffAuthorisationSystem();
+            // Ensure object and any related objects are reloaded before checking to see what needs cleanup
+            relationshipType = c.reloadEntity(relationshipType);
+            List<Relationship> byRelationshipType = relationshipService
+                .findByRelationshipType(c, relationshipType);
+            for (Relationship relationship : byRelationshipType) {
+                relationshipService.delete(c, relationship);
+            }
+            if (relationshipType != null) {
+                delete(c, relationshipType);
+            }
+            c.complete();
+            indexingService.commit();
         }
-        context.restoreAuthSystemState();
 
-        delete(relationshipType);
+    }
+
+    @Override
+    public void delete(Context c, RelationshipType dso) throws Exception {
+        if (dso != null) {
+            getService().delete(c,dso);
+        }
     }
 
     public RelationshipType build() {
@@ -74,34 +89,45 @@ public class RelationshipTypeBuilder extends AbstractBuilder<RelationshipType, R
     }
 
     public static RelationshipTypeBuilder createRelationshipTypeBuilder(Context context, EntityType leftType,
-                                                                        EntityType rightType, String leftLabel,
-                                                                        String rightLabel, Integer leftCardinalityMin,
+                                                                        EntityType rightType,
+                                                                        String leftwardType,
+                                                                        String rightwardType,
+                                                                        Integer leftCardinalityMin,
                                                                         Integer leftCardinalityMax,
                                                                         Integer rightCardinalityMin,
                                                                         Integer rightCardinalityMax) {
         RelationshipTypeBuilder relationshipBuilder = new RelationshipTypeBuilder(context);
         return relationshipBuilder.create(context, leftType,
-                                          rightType, leftLabel,
-                                          rightLabel, leftCardinalityMin,
+                                          rightType, leftwardType,
+                                          rightwardType, leftCardinalityMin,
                                           leftCardinalityMax, rightCardinalityMin,
                                           rightCardinalityMax);
     }
 
     private RelationshipTypeBuilder create(Context context, EntityType leftEntityType, EntityType rightEntityType,
-                                           String leftLabel, String rightLabel, Integer leftCardinalityMin,
+                                           String leftwardType, String rightwardType, Integer leftCardinalityMin,
                                            Integer leftCardinalityMax, Integer rightCardinalityMin,
                                            Integer rightCardinalityMax) {
         try {
 
             this.context = context;
             this.relationshipType = relationshipTypeService
-                    .create(context, leftEntityType, rightEntityType, leftLabel, rightLabel, leftCardinalityMin,
+                    .create(context, leftEntityType, rightEntityType, leftwardType, rightwardType, leftCardinalityMin,
                             leftCardinalityMax, rightCardinalityMin, rightCardinalityMax);
 
         } catch (SQLException | AuthorizeException e) {
             e.printStackTrace();
         }
 
+        return this;
+    }
+
+    public RelationshipTypeBuilder withCopyToLeft(boolean copyToLeft) throws SQLException {
+        relationshipType.setCopyToLeft(copyToLeft);
+        return this;
+    }
+    public RelationshipTypeBuilder withCopyToRight(boolean copyToRight) throws SQLException {
+        relationshipType.setCopyToRight(copyToRight);
         return this;
     }
 }

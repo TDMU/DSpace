@@ -14,7 +14,6 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
-
 import javax.servlet.http.HttpServletRequest;
 
 import gr.ekt.bte.core.TransformationEngine;
@@ -27,11 +26,13 @@ import org.dspace.app.rest.Parameter;
 import org.dspace.app.rest.SearchRestMethod;
 import org.dspace.app.rest.converter.WorkspaceItemConverter;
 import org.dspace.app.rest.exception.DSpaceBadRequestException;
+import org.dspace.app.rest.exception.RepositoryMethodNotImplementedException;
+import org.dspace.app.rest.exception.UnprocessableEntityException;
 import org.dspace.app.rest.model.ErrorRest;
 import org.dspace.app.rest.model.WorkspaceItemRest;
-import org.dspace.app.rest.model.hateoas.WorkspaceItemResource;
 import org.dspace.app.rest.model.patch.Operation;
 import org.dspace.app.rest.model.patch.Patch;
+import org.dspace.app.rest.repository.handler.service.UriListHandlerService;
 import org.dspace.app.rest.submit.AbstractRestProcessingStep;
 import org.dspace.app.rest.submit.SubmissionService;
 import org.dspace.app.rest.submit.UploadableStep;
@@ -41,7 +42,9 @@ import org.dspace.app.util.SubmissionConfigReader;
 import org.dspace.app.util.SubmissionConfigReaderException;
 import org.dspace.app.util.SubmissionStepConfig;
 import org.dspace.authorize.AuthorizeException;
+import org.dspace.authorize.service.AuthorizeService;
 import org.dspace.content.Collection;
+import org.dspace.content.Item;
 import org.dspace.content.WorkspaceItem;
 import org.dspace.content.service.BitstreamFormatService;
 import org.dspace.content.service.BitstreamService;
@@ -63,9 +66,10 @@ import org.dspace.submit.lookup.SubmissionLookupService;
 import org.dspace.submit.util.ItemSubmissionLookupDTO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.rest.webmvc.json.patch.PatchException;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -75,7 +79,8 @@ import org.springframework.web.multipart.MultipartFile;
  * @author Andrea Bollini (andrea.bollini at 4science.it)
  */
 @Component(WorkspaceItemRest.CATEGORY + "." + WorkspaceItemRest.NAME)
-public class WorkspaceItemRestRepository extends DSpaceRestRepository<WorkspaceItemRest, Integer> {
+public class WorkspaceItemRestRepository extends DSpaceRestRepository<WorkspaceItemRest, Integer>
+    implements ReloadableEntityObjectRepository<WorkspaceItem, Integer> {
 
     public static final String OPERATION_PATH_SECTIONS = "sections";
 
@@ -83,20 +88,25 @@ public class WorkspaceItemRestRepository extends DSpaceRestRepository<WorkspaceI
 
     @Autowired
     WorkspaceItemService wis;
+
     @Autowired
     ItemService itemService;
+
     @Autowired
     BitstreamService bitstreamService;
+
     @Autowired
     BitstreamFormatService bitstreamFormatService;
+
     @Autowired
     ConfigurationService configurationService;
 
     @Autowired
-    WorkspaceItemConverter converter;
+    WorkspaceItemConverter workspaceItemConverter;
 
     @Autowired
     SubmissionService submissionService;
+
     @Autowired
     EPersonServiceImpl epersonService;
 
@@ -106,13 +116,19 @@ public class WorkspaceItemRestRepository extends DSpaceRestRepository<WorkspaceI
     @Autowired
     CollectionService collectionService;
 
+    @Autowired
+    AuthorizeService authorizeService;
+
+    @Autowired
+    private UriListHandlerService uriListHandlerService;
+
     private SubmissionConfigReader submissionConfigReader;
 
     public WorkspaceItemRestRepository() throws SubmissionConfigReaderException {
         submissionConfigReader = new SubmissionConfigReader();
     }
 
-    //TODO @PreAuthorize("hasPermission(#id, 'WORKSPACEITEM', 'READ')")
+    @PreAuthorize("hasPermission(#id, 'WORKSPACEITEM', 'READ')")
     @Override
     public WorkspaceItemRest findOne(Context context, Integer id) {
         WorkspaceItem witem = null;
@@ -124,53 +140,49 @@ public class WorkspaceItemRestRepository extends DSpaceRestRepository<WorkspaceI
         if (witem == null) {
             return null;
         }
-        return converter.fromModel(witem);
+        return converter.toRest(witem, utils.obtainProjection());
     }
 
-    //TODO @PreAuthorize("hasAuthority('ADMIN')")
+    @PreAuthorize("hasAuthority('ADMIN')")
     @Override
     public Page<WorkspaceItemRest> findAll(Context context, Pageable pageable) {
-        List<WorkspaceItem> witems = null;
-        int total = 0;
         try {
-            total = wis.countTotal(context);
-            witems = wis.findAll(context, pageable.getPageSize(), pageable.getOffset());
+            long total = wis.countTotal(context);
+            List<WorkspaceItem> witems = wis.findAll(context, pageable.getPageSize(),
+                    Math.toIntExact(pageable.getOffset()));
+            return converter.toRestPage(witems, pageable, total, utils.obtainProjection());
         } catch (SQLException e) {
             throw new RuntimeException(e.getMessage(), e);
         }
-        Page<WorkspaceItemRest> page = new PageImpl<WorkspaceItem>(witems, pageable, total).map(converter);
-        return page;
     }
 
-    //TODO @PreAuthorize("hasPermission(#submitterID, 'EPERSON', 'READ')")
+    @PreAuthorize("hasPermission(#submitterID, 'EPERSON', 'READ')")
     @SearchRestMethod(name = "findBySubmitter")
     public Page<WorkspaceItemRest> findBySubmitter(@Parameter(value = "uuid", required = true) UUID submitterID,
             Pageable pageable) {
-        List<WorkspaceItem> witems = null;
-        int total = 0;
         try {
             Context context = obtainContext();
             EPerson ep = epersonService.find(context, submitterID);
-            witems = wis.findByEPerson(context, ep, pageable.getPageSize(), pageable.getOffset());
-            total = wis.countByEPerson(context, ep);
+            long total = wis.countByEPerson(context, ep);
+            List<WorkspaceItem> witems = wis.findByEPerson(context, ep, pageable.getPageSize(),
+                    Math.toIntExact(pageable.getOffset()));
+            return converter.toRestPage(witems, pageable, total, utils.obtainProjection());
         } catch (SQLException e) {
             throw new RuntimeException(e.getMessage(), e);
         }
-        Page<WorkspaceItemRest> page = new PageImpl<WorkspaceItem>(witems, pageable, total).map(converter);
-        return page;
     }
 
     @Override
     protected WorkspaceItemRest createAndReturn(Context context) throws SQLException, AuthorizeException {
         WorkspaceItem source = submissionService.createWorkspaceItem(context, getRequestService().getCurrentRequest());
-        return converter.convert(source);
+        return converter.toRest(source, utils.obtainProjection());
     }
 
     @Override
     protected WorkspaceItemRest save(Context context, WorkspaceItemRest wsi) {
         SubmissionConfig submissionConfig = submissionConfigReader
             .getSubmissionConfigByName(submissionConfigReader.getDefaultSubmissionConfigName());
-        WorkspaceItem source = converter.toModel(wsi);
+        WorkspaceItem source = workspaceItemConverter.toModel(wsi);
         for (int stepNum = 0; stepNum < submissionConfig.getNumberOfSteps(); stepNum++) {
 
             SubmissionStepConfig stepConfig = submissionConfig.getStep(stepNum);
@@ -197,7 +209,6 @@ public class WorkspaceItemRestRepository extends DSpaceRestRepository<WorkspaceI
                                             + " Therefore it cannot be used by the Configurable Submission as the " +
                                             "<processing-class>!");
                 }
-
             } catch (Exception e) {
                 log.error(e.getMessage(), e);
             }
@@ -211,18 +222,13 @@ public class WorkspaceItemRestRepository extends DSpaceRestRepository<WorkspaceI
         return WorkspaceItemRest.class;
     }
 
-    @Override
-    public WorkspaceItemResource wrapResource(WorkspaceItemRest witem, String... rels) {
-        return new WorkspaceItemResource(witem, utils, rels);
-    }
-
-    //TODO @PreAuthorize("hasPermission(#id, 'WORKSPACEITEM', 'WRITE')")
+    @PreAuthorize("hasPermission(#id, 'WORKSPACEITEM', 'WRITE')")
     @Override
     public WorkspaceItemRest upload(HttpServletRequest request, String apiCategory, String model, Integer id,
-                                    MultipartFile file) throws Exception {
+                                    MultipartFile file) throws SQLException {
 
         Context context = obtainContext();
-        WorkspaceItemRest wsi = findOne(id);
+        WorkspaceItemRest wsi = findOne(context, id);
         WorkspaceItem source = wis.find(context, id);
         List<ErrorRest> errors = new ArrayList<ErrorRest>();
         SubmissionConfig submissionConfig =
@@ -256,7 +262,7 @@ public class WorkspaceItemRestRepository extends DSpaceRestRepository<WorkspaceI
             }
 
         }
-        wsi = converter.convert(source);
+        wsi = converter.toRest(source, utils.obtainProjection());
 
         if (!errors.isEmpty()) {
             wsi.getErrors().addAll(errors);
@@ -266,12 +272,12 @@ public class WorkspaceItemRestRepository extends DSpaceRestRepository<WorkspaceI
         return wsi;
     }
 
-    //TODO @PreAuthorize("hasPermission(#id, 'WORKSPACEITEM', 'WRITE')")
+    @PreAuthorize("hasPermission(#id, 'WORKSPACEITEM', 'WRITE')")
     @Override
     public void patch(Context context, HttpServletRequest request, String apiCategory, String model, Integer id,
                       Patch patch) throws SQLException, AuthorizeException {
         List<Operation> operations = patch.getOperations();
-        WorkspaceItemRest wsi = findOne(id);
+        WorkspaceItemRest wsi = findOne(context, id);
         WorkspaceItem source = wis.find(context, id);
         for (Operation op : operations) {
             //the value in the position 0 is a null value
@@ -289,6 +295,7 @@ public class WorkspaceItemRestRepository extends DSpaceRestRepository<WorkspaceI
 
     private void evaluatePatch(Context context, HttpServletRequest request, WorkspaceItem source, WorkspaceItemRest wsi,
                                String section, Operation op) {
+        boolean sectionExist = false;
         SubmissionConfig submissionConfig = submissionConfigReader
             .getSubmissionConfigByName(wsi.getSubmissionDefinition().getName());
         for (int stepNum = 0; stepNum < submissionConfig.getNumberOfSteps(); stepNum++) {
@@ -296,6 +303,7 @@ public class WorkspaceItemRestRepository extends DSpaceRestRepository<WorkspaceI
             SubmissionStepConfig stepConfig = submissionConfig.getStep(stepNum);
 
             if (section.equals(stepConfig.getId())) {
+                sectionExist = true;
                 /*
                  * First, load the step processing class (using the current
                  * class loader)
@@ -312,7 +320,8 @@ public class WorkspaceItemRestRepository extends DSpaceRestRepository<WorkspaceI
                         AbstractRestProcessingStep stepProcessing =
                             (AbstractRestProcessingStep) stepClass.newInstance();
                         stepProcessing.doPreProcessing(context, source);
-                        stepProcessing.doPatchProcessing(context, getRequestService().getCurrentRequest(), source, op);
+                        stepProcessing.doPatchProcessing(context,
+                                       getRequestService().getCurrentRequest(), source, op, stepConfig);
                         stepProcessing.doPostProcessing(context, source);
                     } else {
                         throw new DSpaceBadRequestException(
@@ -321,15 +330,21 @@ public class WorkspaceItemRestRepository extends DSpaceRestRepository<WorkspaceI
                             " Therefore it cannot be used by the Configurable Submission as the <processing-class>!");
                     }
 
+                } catch (UnprocessableEntityException e) {
+                    throw e;
                 } catch (Exception e) {
                     log.error(e.getMessage(), e);
                     throw new PatchException("Error processing the patch request", e);
                 }
             }
         }
+        if (!sectionExist) {
+            throw new UnprocessableEntityException("The section with name " + section +
+                                                   " does not exist in this submission!");
+        }
     }
 
-    //TODO @PreAuthorize("hasPermission(#id, 'WORKSPACEITEM', 'DELETE')")
+    @PreAuthorize("hasPermission(#id, 'WORKSPACEITEM', 'DELETE')")
     @Override
     protected void delete(Context context, Integer id) throws AuthorizeException {
         WorkspaceItem witem = null;
@@ -475,7 +490,7 @@ public class WorkspaceItemRestRepository extends DSpaceRestRepository<WorkspaceI
                             }
                         }
                     }
-                    WorkspaceItemRest wsi = converter.convert(wi);
+                    WorkspaceItemRest wsi = converter.toRest(wi, utils.obtainProjection());
                     if (result.size() == 1) {
                         if (!errors.isEmpty()) {
                             wsi.getErrors().addAll(errors);
@@ -490,4 +505,50 @@ public class WorkspaceItemRestRepository extends DSpaceRestRepository<WorkspaceI
         return results;
     }
 
+    @Override
+    protected WorkspaceItemRest createAndReturn(Context context, List<String> stringList)
+        throws AuthorizeException, SQLException, RepositoryMethodNotImplementedException {
+
+        HttpServletRequest req = getRequestService().getCurrentRequest().getHttpServletRequest();
+        WorkspaceItem workspaceItem = uriListHandlerService.handle(context, req, stringList, WorkspaceItem.class);
+        return converter.toRest(workspaceItem, utils.obtainProjection());
+    }
+
+    /**
+     * This is a search method that will return the WorkspaceItemRest object found through the UUID of an item. It'll
+     * find the Item through the given UUID and try to resolve the WorkspaceItem relevant for that item and return it.
+     * It'll return a 401/403 if the current user isn't allowed to view the WorkspaceItem.
+     * It'll return a 204 if nothing was found
+     * @param itemUuid  The UUID for the Item to be used
+     * @param pageable  The pageable if present
+     * @return          The resulting WorkspaceItem object
+     */
+    @SearchRestMethod(name = "item")
+    public WorkspaceItemRest findByItemUuid(@Parameter(value = "uuid", required = true) UUID itemUuid,
+                                            Pageable pageable) {
+        try {
+            Context context = obtainContext();
+            Item item = itemService.find(context, itemUuid);
+            WorkspaceItem workspaceItem = wis.findByItem(context, item);
+            if (workspaceItem == null) {
+                return null;
+            }
+            if (!authorizeService.authorizeActionBoolean(context, workspaceItem.getItem(), Constants.READ)) {
+                throw new AccessDeniedException("The current user does not have rights to view the WorkflowItem");
+            }
+            return converter.toRest(workspaceItem, utils.obtainProjection());
+        } catch (SQLException e) {
+            throw new RuntimeException(e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public WorkspaceItem findDomainObjectByPk(Context context, Integer id) throws SQLException {
+        return wis.find(context, id);
+    }
+
+    @Override
+    public Class<Integer> getPKClass() {
+        return Integer.class;
+    }
 }

@@ -9,23 +9,23 @@ package org.dspace.app.rest.repository;
 
 import java.io.IOException;
 import java.sql.SQLException;
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
-
 import javax.mail.MessagingException;
 import javax.servlet.http.HttpServletRequest;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.log4j.Logger;
+import org.dspace.app.rest.DiscoverableEndpointsService;
 import org.dspace.app.rest.Parameter;
 import org.dspace.app.rest.SearchRestMethod;
-import org.dspace.app.rest.converter.ClaimedTaskConverter;
 import org.dspace.app.rest.exception.RESTAuthorizationException;
 import org.dspace.app.rest.exception.RepositoryMethodNotImplementedException;
 import org.dspace.app.rest.exception.UnprocessableEntityException;
 import org.dspace.app.rest.model.ClaimedTaskRest;
 import org.dspace.app.rest.model.PoolTaskRest;
-import org.dspace.app.rest.model.hateoas.ClaimedTaskResource;
+import org.dspace.app.util.Util;
 import org.dspace.authorize.AuthorizeException;
 import org.dspace.authorize.service.AuthorizeService;
 import org.dspace.content.service.ItemService;
@@ -44,10 +44,12 @@ import org.dspace.xmlworkflow.state.actions.WorkflowActionConfig;
 import org.dspace.xmlworkflow.storedcomponents.ClaimedTask;
 import org.dspace.xmlworkflow.storedcomponents.XmlWorkflowItem;
 import org.dspace.xmlworkflow.storedcomponents.service.ClaimedTaskService;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.rest.webmvc.ResourceNotFoundException;
+import org.springframework.hateoas.Link;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Component;
 
@@ -58,7 +60,8 @@ import org.springframework.stereotype.Component;
  */
 
 @Component(PoolTaskRest.CATEGORY + "." + ClaimedTaskRest.NAME)
-public class ClaimedTaskRestRepository extends DSpaceRestRepository<ClaimedTaskRest, Integer> {
+public class ClaimedTaskRestRepository extends DSpaceRestRepository<ClaimedTaskRest, Integer>
+                                       implements InitializingBean {
 
     private static final Logger log = Logger.getLogger(ClaimedTaskRestRepository.class);
 
@@ -72,9 +75,6 @@ public class ClaimedTaskRestRepository extends DSpaceRestRepository<ClaimedTaskR
     ClaimedTaskService claimedTaskService;
 
     @Autowired
-    ClaimedTaskConverter converter;
-
-    @Autowired
     XmlWorkflowService workflowService;
 
     @Autowired
@@ -82,6 +82,9 @@ public class ClaimedTaskRestRepository extends DSpaceRestRepository<ClaimedTaskR
 
     @Autowired
     AuthorizeService authorizeService;
+
+    @Autowired
+    DiscoverableEndpointsService discoverableEndpointsService;
 
     @Override
     @PreAuthorize("hasPermission(#id, 'CLAIMEDTASK', 'READ')")
@@ -95,14 +98,13 @@ public class ClaimedTaskRestRepository extends DSpaceRestRepository<ClaimedTaskR
         if (task == null) {
             return null;
         }
-        return converter.fromModel(task);
+        return converter.toRest(task, utils.obtainProjection());
     }
 
     @SearchRestMethod(name = "findByUser")
     public Page<ClaimedTaskRest> findByUser(@Parameter(value = "uuid", required = true) UUID userID,
             Pageable pageable) {
         //FIXME this should be secured with annotation but they are currently ignored by search methods
-        List<ClaimedTask> tasks = null;
         try {
             Context context = obtainContext();
             EPerson currentUser = context.getCurrentUser();
@@ -113,25 +115,19 @@ public class ClaimedTaskRestRepository extends DSpaceRestRepository<ClaimedTaskR
             }
             if (authorizeService.isAdmin(context) || userID.equals(currentUser.getID())) {
                 EPerson ep = epersonService.find(context, userID);
-                tasks = claimedTaskService.findByEperson(context, ep);
+                List<ClaimedTask> tasks = claimedTaskService.findByEperson(context, ep);
+                return converter.toRestPage(tasks, pageable, utils.obtainProjection());
             } else {
                 throw new RESTAuthorizationException("Only administrators can search for claimed tasks of other users");
             }
         } catch (SQLException e) {
             throw new RuntimeException(e.getMessage(), e);
         }
-        Page<ClaimedTaskRest> page = utils.getPage(tasks, pageable).map(converter);
-        return page;
     }
 
     @Override
     public Class<ClaimedTaskRest> getDomainClass() {
         return ClaimedTaskRest.class;
-    }
-
-    @Override
-    public ClaimedTaskResource wrapResource(ClaimedTaskRest task, String... rels) {
-        return new ClaimedTaskResource(task, utils, rels);
     }
 
     @Override
@@ -150,6 +146,11 @@ public class ClaimedTaskRestRepository extends DSpaceRestRepository<ClaimedTaskR
 
             Step step = workflow.getStep(task.getStepID());
             WorkflowActionConfig currentActionConfig = step.getActionConfig(task.getActionID());
+            String submitButton = Util.getSubmitButton(request, null);
+            if (!currentActionConfig.getProcessingAction().getOptions().contains(submitButton)) {
+                throw new UnprocessableEntityException(submitButton + " is not a valid option on this action (" +
+                    currentActionConfig.getProcessingAction().getClass() + ").");
+            }
             workflowService
                 .doState(context, context.getCurrentUser(), request, task.getWorkflowItem().getID(), workflow,
                     currentActionConfig);
@@ -194,5 +195,12 @@ public class ClaimedTaskRestRepository extends DSpaceRestRepository<ClaimedTaskR
 
     public Page<ClaimedTaskRest> findAll(Context context, Pageable pageable) {
         throw new RepositoryMethodNotImplementedException(ClaimedTaskRest.NAME, "findAll");
+    }
+
+    @Override
+    public void afterPropertiesSet() throws Exception {
+        discoverableEndpointsService.register(this, Arrays.asList(
+                new Link("/api/" + ClaimedTaskRest.CATEGORY + "/" + ClaimedTaskRest.NAME + "/search",
+                        ClaimedTaskRest.NAME + "-search")));
     }
 }
