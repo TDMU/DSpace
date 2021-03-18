@@ -65,7 +65,9 @@
 	<message key="xmlui.general.delete">Видалити</message>
 	<message key="xmlui.general.next">Далі</message>
 	<message key="xmlui.general.untitled">Немає даних</message>
-	
+        <message key="xmlui.general.perform">Виконати</message>
+        <message key="xmlui.general.queue">Черга</message>
+        <message key="xmlui.general.tnmuname">Науковий репозитарій Тернопільського національного медичного університету імені І.Я.Горбачевського</message>        
 	
 	<!-- 
 		Page not found keys 
