@@ -68,6 +68,11 @@
         <message key="xmlui.general.perform">Виконати</message>
         <message key="xmlui.general.queue">Черга</message>
         <message key="xmlui.general.tnmuname">Науковий репозитарій Тернопільського національного медичного університету імені І.Я.Горбачевського</message>        
+
+        <!-- Keys which are used by exception2dri.xsl on error pages -->
+        <message key="xmlui.error.contact_msg">Зверніться до адміністратора сайту, якщо ви хочете повідомити про цю помилку. Якщо можливо, надайте детальну інформацію про те, що ви робили на момент виникнення цієї помилки.</message>
+        <message key="xmlui.error.contact">Зверніться до адміністратора сайту</message>
+        <message key="xmlui.error.show_stack">Показати основний стек помилок</message>
 	
 	<!-- 
 		Page not found keys 
@@ -79,18 +84,25 @@
 	<message key="xmlui.PageNotFound.head">Сторінку не знайдено</message>
 	<message key="xmlui.PageNotFound.para1">Ми не можемо знайти потрібну сторінку.</message>
 	
-	
+	<!--
+	   The "utils" non-aspect
+       -->
+    <message key="xmlui.utils.AuthenticationUtil.onlyAdmins">Тільки для адміністраторів сайтів є припустимим вхід від імені іншого користувача.</message>
+    <message key="xmlui.utils.AuthenticationUtil.onlyAuthenticatedAdmins">Тільки авторизовані користувачі, які є адміністраторами, можуть увійти від імені іншого користувача.</message>
+    <message key="xmlui.utils.AuthenticationUtil.notAnotherAdmin">Ви не можете приймати логін як іншого адміністратора.</message>	
+
 	<!--
 		This section is for feed syndications (RSS, atom, etc)  
 	-->
-	<message key="xmlui.feed.general_description">The DSpace digital repository system captures, stores, indexes, preserves, and distributes digital research material.</message>
-	<message key="xmlui.feed.logo_title">The Channel Image</message>
+	<message key="xmlui.feed.general_description">Цифровий репозиторій DSpace збирає, зберігає, індексує та розповсюджує матеріали досліджень в цифровій формі.</message>
+    <message key="xmlui.feed.header">Стрічки RSS</message>
+	<message key="xmlui.feed.logo_title">Логотип каналу</message>
 	<message key="xmlui.feed.untitled">Немає даних</message>
 	
 	<!--
 		Default notice header 
 	 	-->
-	<message key="xmlui.general.notice.default_head">Notice</message>
+	<message key="xmlui.general.notice.default_head">Оголошення</message>
 	
 	
 	
@@ -1981,5 +1993,42 @@
   <message key="xmlui.ChoiceLookupTransformer.field.dc_contributor_author.help.first">Ім'я, наприклад "Іван Іванович"</message>
   <message key="xmlui.ChoiceLookupTransformer.field.dc_contributor_author.title">LC Name Authority author lookup</message>
   <message key="xmlui.ChoiceLookupTransformer.field.dc_contributor_author.nonauthority">Local value "@1@" (not in Naming Authority)</message>
+
+
+    <message key="xmlui.mirage2.itemSummaryView.MetaData">Метадані</message>
+    <message key="xmlui.mirage2.itemSummaryView.Collections">Колекції</message>
+
+    <message key="xmlui.mirage2.discovery.reset">Скинути</message>
+    <message key="xmlui.mirage2.discovery.newFilter">Додати новий фільтр</message>
+    <message key="xmlui.mirage2.discovery.showAdvancedFilters">Показати розширений фільтр</message>
+    <message key="xmlui.mirage2.discovery.hideAdvancedFilters">Приховати розширений фільтр</message>
+
+
+    <message key="xmlui.mirage2.forms.instancedCompositeFields.add">Додати</message>
+    <message key="xmlui.mirage2.forms.instancedCompositeFields.remove">Видалити</message>
+    <message key="xmlui.mirage2.forms.instancedCompositeFields.noSuggestionError">ПОМИЛКА: Поле вводу з поведінкою вибору "запропонувати" (автозаповнення) не реалізовано для полів Composite (наприклад, "name").</message>
+    <message key="xmlui.mirage2.forms.nonInstancedCompositeFields.noSuggestionError">ПОМИЛКА: Поле вводу з поведінкою вибору "запропонувати" (автозаповнення) не реалізовано для полів Composite (наприклад, "name").</message>
+    <message key="xmlui.mirage2.forms.nonCompositeFieldSet.add">Додати</message>
+    <message key="xmlui.mirage2.forms.nonCompositeFieldSet.remove">Видалити</message>
+
+    <message key="xmlui.mirage2.page-structure.aboutThisRepository">Про цей репозиторій</message>
+    <message key="xmlui.mirage2.page-structure.toggleNavigation">Переключити навігацію</message>
+
+    <message key="xmlui.mirage2.page-structure.heroUnit.title">Про цей репозиторій</message>
+    <message key="xmlui.mirage2.page-structure.heroUnit.content">Щоб додати власний вміст на цю сторінку, відредагуйте webapps/xmlui/themes/Mirage2/lib/xsl/core/page-structure.xsl та додайте власний вміст до заголовка, доріжки та тексту. Якщо ви хочете додати додаткові сторінки, вам потрібно буде створити додатковий xsl: при блокуванні та узгодженні uri-запиту з будь-якою сторінкою, яку ви додаєте. В даний час статичні сторінки, створені за допомогою зміни XSL, доступні лише під префіксом URI сторінки /.</message>
+
+    <message key="xmlui.mirage2.navigation.rss.feed">стрічка</message>
+
+    <message key="xmlui.mirage2.choice-authority-control.loading">Завантаження...</message>
+
+    <message key="xmlui.mirage2.item-list.thumbnail">Ескіз</message>
+
+
+    <!-- org.dspace.app.xmlui.Submission.submit.StartSubmissionLookupStep -->
+    <message key="xmlui.Submission.submit.StartSubmissionLookupStep.submit_lookup">Пошук</message>
+    <message key="xmlui.Submission.submit.StartSubmissionLookupStep.title">Пошук публікації</message>
+    <message key="xmlui.Submission.submit.StartSubmissionLookupStep.lookup_help">Введіть ідентифікатор публікації, DOI, заголовок або автора, а потім натисніть "Пошук". Для продовження процесу подання вам буде показано список усіх відповідних публікацій.</message>
+    <message key="xmlui.Submission.submit.StartSubmissionLookupStep.submit_publication_item">Запис імпортованої публікації</message>
+    <message key="xmlui.Submission.submit.progressbar.lookup">Підбір</message>
 
 </catalogue>
