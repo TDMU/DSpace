@@ -59,3 +59,21 @@
     margin-bottom:5px;
   }
 }
+
+.navbar-brand {
+    height: 80px;
+}
+
+header .navbar-brand img {
+    height: 60px;
+    width: 48px;
+}
+
+header .navbar-header-ttile {
+    margin: 20px;
+    line-height: 20px;
+    font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
+    font-size: 24px;
+    font-weight: 600;
+    color: #eee;
+}
