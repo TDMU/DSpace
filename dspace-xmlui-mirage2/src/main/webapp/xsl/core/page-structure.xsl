@@ -343,7 +343,7 @@
                         </button>
 
                         <a href="{$context-path}/" class="navbar-brand">
-                            <img src="{$theme-path}images/DSpace-logo-line.svg" />
+                            <img src="{$theme-path}images/tnmu-dspace-logo-60.svg" />
 <i18n:text>xmlui.general.tnmuname</i18n:text>
                         </a>
 
@@ -420,7 +420,7 @@
                               </div>
                     </div>
 <div class="navbar-header pull-left"><i18n:text>xmlui.general.dspace_home</i18n:text></div>
-<div class="navbar-header pull-left"><i18n:text>xmlui.general.tnmuname</i18n:text></div>
+<div class="navbar-header navbar-header-ttile pull-left"><i18n:text>xmlui.general.tnmuname</i18n:text></div>
                     <div class="navbar-header pull-right hidden-xs">
                         <ul class="nav navbar-nav pull-left">
                               <xsl:call-template name="languageSelection"/>
