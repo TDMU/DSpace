@@ -342,11 +342,27 @@
                             <span class="icon-bar"></span>
                         </button>
 
-                        <a href="{$context-path}/" class="navbar-brand">
-                            <img src="{$theme-path}images/tnmu-logo-60.png" />
-<div class="navbar-header navbar-header-ttile pull-left"><i18n:text>xmlui.general.tnmuname</i18n:text></div>
-                        </a>
 
+<!-- working OK (styles have to be integrated) -->
+<!-- 
+                        <a href="{$context-path}/" class="navbar-brand" style="max-width: 900px;">
+                           <div class="pull-left" > <img src="{$theme-path}images/tnmu-logo-60.png" /></div>
+<div class="navbar-header-ttile" style="margin: 10px;"><i18n:text>xmlui.general.tnmuname</i18n:text></div>
+                        </a>
+-->
+<!-- alternate working (styles have to be integrated) -->
+<div class="col-xs-12 col-sm-12" style="max-width:950px;">
+    <div class="pull-left" style="margin: 15px;">
+                        <a href="https://tdmu.edu.ua" class="navbar-brand" style="height:60px;padding:0px;">
+                            <img src="{$theme-path}images/tnmu-logo-60.png" />
+                        </a>
+    </div>
+    <div style="padding:25px;">
+                        <a href="{$context-path}/" class=" navbar-header-ttile" style="margin:0px;">
+                            <i18n:text>xmlui.general.tnmuname</i18n:text>
+                        </a>
+    </div>
+</div>
 
                         <div class="navbar-header pull-right visible-xs hidden-sm hidden-md hidden-lg">
                         <ul class="nav nav-pills pull-left ">
@@ -419,7 +435,6 @@
                         </ul>
                               </div>
                     </div>
-<div class="navbar-header navbar-header-ttile pull-left"><i18n:text>xmlui.general.tnmuname</i18n:text></div>
                     <div class="navbar-header pull-right hidden-xs">
                         <ul class="nav navbar-nav pull-left">
                               <xsl:call-template name="languageSelection"/>
