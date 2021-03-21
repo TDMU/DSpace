@@ -2031,4 +2031,8 @@
     <message key="xmlui.Submission.submit.StartSubmissionLookupStep.submit_publication_item">Запис імпортованої публікації</message>
     <message key="xmlui.Submission.submit.progressbar.lookup">Підбір</message>
 
+    <!-- Site Level Recently Added Content -->
+    <message key="xmlui.ArtifactBrowser.SiteViewer.head_recent_submissions">Недавно додано</message>
+    <message key="xmlui.ArtifactBrowser.AbstractRecentSubmissionTransformer.recent_submissions_more">Дивитися далі</message>
+
 </catalogue>
