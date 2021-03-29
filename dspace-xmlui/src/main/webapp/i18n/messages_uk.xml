@@ -159,7 +159,7 @@
    
    <!--  some common other possibilities for Advanced Search Fields -->
    <message key="xmlui.ArtifactBrowser.AdvancedSearch.type_contributor">Хто вніс в базу</message>
-   <message key="xmlui.ArtifactBrowser.AdvancedSearch.type_creator">Автор</message>
+   <message key="xmlui.ArtifactBrowser.AdvancedSearch.type_creator">Creator</message>
    <message key="xmlui.ArtifactBrowser.AdvancedSearch.type_subject">Тема</message>
    <message key="xmlui.ArtifactBrowser.AdvancedSearch.type_description">Деякий опис</message>
    <message key="xmlui.ArtifactBrowser.AdvancedSearch.type_relation">Відношення</message>
@@ -2031,8 +2031,138 @@
     <message key="xmlui.Submission.submit.StartSubmissionLookupStep.submit_publication_item">Запис імпортованої публікації</message>
     <message key="xmlui.Submission.submit.progressbar.lookup">Підбір</message>
 
+
+    <!-- org.dspace.app.xmlui.artifactbrowser.AdvancedSearch.java -->
+    <!-- Note: As of DSpace 6.0, org.dspace.app.xmlui.aspect.artifactbrowser.AdvancedSearch has been removed.
+         The following i18n keys will be left as is as they're referenced by the Discovery SidebarFacetsTransformer
+         but in future, they should be refactored to a more relevant key prefix -->
+    <message key="xmlui.ArtifactBrowser.AdvancedSearch.type_dc.contributor.author_filter">Автор</message>
+
+    <message key="xmlui.ArtifactBrowser.AdvancedSearch.type_dc.subject_filter">Тема</message>
+    <message key="xmlui.ArtifactBrowser.AdvancedSearch.type_dc.type_filter">Тип вмісту</message>
+    <message key="xmlui.ArtifactBrowser.AdvancedSearch.type_dc.date.issued">Дата публікації</message>
+    <message key="xmlui.ArtifactBrowser.AdvancedSearch.type_dateIssued">Дата публікації</message>
+    
+    <message key="xmlui.ArtifactBrowser.AdvancedSearch.type_has_content_in_original_bundle">Має файл(и)</message>
+    <message key="xmlui.ArtifactBrowser.AdvancedSearch.value_has_content_in_original_bundle_true">Так</message>
+    <message key="xmlui.ArtifactBrowser.AdvancedSearch.value_has_content_in_original_bundle_false">Ні</message>
+
+
     <!-- Site Level Recently Added Content -->
-    <message key="xmlui.ArtifactBrowser.SiteViewer.head_recent_submissions">Недавно додано</message>
+    <message key="xmlui.ArtifactBrowser.SiteViewer.head_recent_submissions">Недавно додані</message>
+
     <message key="xmlui.ArtifactBrowser.AbstractRecentSubmissionTransformer.recent_submissions_more">Дивитися далі</message>
+    <message key="xmlui.Discovery.RecentSubmissions.RecentSubmissionTransformer.head">{0}: Недавно додані</message>
+    <message key="xmlui.Discovery.RecentSubmissions.RecentSubmissionTransformer.trail">Недавно додані</message>
+    <message key="xmlui.Discovery.RecentSubmissions.RecentSubmissionTransformer.recent.head">Недавно додано</message>
+
+    <message key="xmlui.ArtifactBrowser.AdvancedSearch.type_type_filter">Вид</message>
+    <message key="xmlui.ArtifactBrowser.AdvancedSearch.type_publisher_filter">Видавець</message>
+
+
+    <message key="xmlui.ArtifactBrowser.AbstractSearch.sort_by.ispartof">Батьківський</message>
+
+    <message key="xmlui.ArtifactBrowser.AbstractSearch.group_by">Груповий результат по</message>
+    <message key="xmlui.ArtifactBrowser.AbstractSearch.group_by.none">Немає</message>
+
+
+    <message key="xmlui.ArtifactBrowser.AbstractSearch.group_by.publication_grp">Публікація</message>
+
+    <message key="xmlui.ArtifactBrowser.AdvancedSearch.type_location.comm">Фонд</message>
+    <message key="xmlui.ArtifactBrowser.AdvancedSearch.type_location.coll">Колекція</message>
+
+
+    <message key="xmlui.ArtifactBrowser.AdvancedSearch.type_dc.relation.ispartofseries_filter">Серія</message>
+
+    <message key="xmlui.ArtifactBrowser.AbstractSearch.type_dc.contributor.author_browse">Перегляд по: Автор</message>
+    <message key="xmlui.ArtifactBrowser.AbstractSearch.type_dc.title_browse">Перегляд по: Назва</message>
+    <message key="xmlui.ArtifactBrowser.AbstractSearch.type_dc.subject_browse">Перегляд по: Тема</message>
+        
+    <message key="xmlui.ArtifactBrowser.AbstractSearch.type_dc.description.abstract_browse">Перегляд по: Аннотація</message>
+    <message key="xmlui.ArtifactBrowser.AbstractSearch.type_series_browse">Перегляд по: Серія</message>
+    <message key="xmlui.ArtifactBrowser.AbstractSearch.type_sponsor_browse">Перегляд по: Спонсор</message>
+    <message key="xmlui.ArtifactBrowser.AbstractSearch.type_identifier_browse">Перегляд по: Ідентифікатор</message>
+    <message key="xmlui.ArtifactBrowser.AbstractSearch.type_language_browse">Перегляд по: Мова (ISO)</message>
+    <message key="xmlui.ArtifactBrowser.AbstractSearch.type_keyword_browse">Перегляд по: Ключове слово</message>
+    <message key="xmlui.ArtifactBrowser.AbstractSearch.type_taxon_browse">Перегляд по: Наукова назва</message>
+    <message key="xmlui.ArtifactBrowser.AbstractSearch.type_contributor_browse">Перегляд по: Contributor</message>
+    <message key="xmlui.ArtifactBrowser.AbstractSearch.type_creator_browse">Перегляд по: Creator</message>
+    <message key="xmlui.ArtifactBrowser.AbstractSearch.type_subject_browse">Перегляд по: Предмет</message>
+    <message key="xmlui.ArtifactBrowser.AbstractSearch.type_description_browse">Перегляд по: Опис</message>
+    <message key="xmlui.ArtifactBrowser.AbstractSearch.type_relation_browse">Перегляд по: Зв'язок</message>
+    <message key="xmlui.ArtifactBrowser.AbstractSearch.type_mime_browse">Перегляд по: Mime-Type</message>
+    <message key="xmlui.ArtifactBrowser.AbstractSearch.type_other_browse">Перегляд по: Other Contributor</message>
+    <message key="xmlui.ArtifactBrowser.AbstractSearch.type_advisor_browse">Перегляд по: Радник</message>
+    <message key="xmlui.ArtifactBrowser.AbstractSearch.type_department_browse">Перегляд по: Підрозділ</message>
+    <message key="xmlui.ArtifactBrowser.AbstractSearch.type_dateissued_dt_browse">Перегляд по: Дата публікації</message>
+
+    <message key="xmlui.ArtifactBrowser.SimpleSearch.filter.title">Назва</message>
+    <message key="xmlui.ArtifactBrowser.SimpleSearch.filter.dateIssued">Дата публікації</message>
+    <message key="xmlui.ArtifactBrowser.SimpleSearch.filter.has_content_in_original_bundle">Має файл(и)</message>
+    <message key="xmlui.ArtifactBrowser.SimpleSearch.filter.original_bundle_filenames">Ім'я файлу</message>
+    <message key="xmlui.ArtifactBrowser.SimpleSearch.filter.original_bundle_descriptions">Опис файлу</message>
+
+
+    <message key="xmlui.dri2xhtml.structural.pagination-info.nototal">Показано елементи {0}-{1}</message>
+
+    <message key="xmlui.Discovery.AbstractSearch.type_author">Фільтрувати по: Автор</message>
+    <message key="xmlui.ArtifactBrowser.SimpleSearch.filter.author">Автор</message>
+    <message key="xmlui.ArtifactBrowser.SimpleSearch.filter.author_filter">Автор</message>
+    <message key="xmlui.Discovery.AbstractSearch.type_subject">Фільтрувати по: Предмет</message>
+    <message key="xmlui.ArtifactBrowser.SimpleSearch.filter.subject">Предмет</message>
+    <message key="xmlui.ArtifactBrowser.SimpleSearch.filter.subject_filter">Предмет</message>
+    <message key="xmlui.ArtifactBrowser.SimpleSearch.filter.dateIssued.year">Дата публікації</message>
+
+
+    <message key="xmlui.Discovery.AbstractSearch.startswith">Почати з</message>
+    <message key="xmlui.Discovery.AbstractSearch.startswith.help">Або введіть кілька початкових літер:</message>
+
+    <message key="xmlui.Discovery.AbstractSearch.sort_by.head">Опції сортування:</message>
+    <message key="xmlui.Discovery.AbstractSearch.sort_by.relevance">Відповідність</message>
+    <message key="xmlui.Discovery.AbstractSearch.sort_by.dc.title_sort_desc">Назва (спад.)</message>
+    <message key="xmlui.Discovery.AbstractSearch.sort_by.dc.date.issued_dt_desc">Дата публікації (спад.)</message>
+
+    <message key="xmlui.Discovery.AbstractSearch.sort_by.dc.title_sort_asc">Назва (зрост.)</message>
+    <message key="xmlui.Discovery.AbstractSearch.sort_by.dc.date.issued_dt_asc">Дата публікації (зрост.)</message>
+
+    <message key="xmlui.Discovery.AbstractSearch.rpp">Результатів на сторінку:</message>
+
+
+    <message key="xmlui.Discovery.AbstractSearch.filters.controls.add-filter">Додати фільтр</message>
+    <message key="xmlui.Discovery.AbstractSearch.filters.controls.apply-filters">Застосувати</message>
+    <message key="xmlui.Discovery.AbstractSearch.filters.controls.remove-filter">Видалити</message>
+    <message key="xmlui.Discovery.AbstractSearch.filters.controls.new-filters.head">Нові фільтри:</message>
+    <message key="xmlui.Discovery.AbstractSearch.filters.controls.current-filters.head">Поточні фільтри:</message>
+    <message key="xmlui.Discovery.AbstractSearch.filters.display">Додати фільтри</message>
+
+    <message key="xmlui.discovery.SearchFacetFilter.no-results">Не знайдено значень для фільтру</message>
+
+    <message key="xmlui.discovery.AbstractFiltersTransformer.filters.head">Шукати</message>
+    <message key="xmlui.discovery.AbstractFiltersTransformer.filters.view-more">... Дивитися далі</message>
+
+
+    <message key="xmlui.Discovery.SimpleSearch.search_scope">Пошук</message>
+    <message key="xmlui.discovery.SimpleSearch.search_label">Пошук</message>
+    <message key="xmlui.Discovery.SimpleSearch.filter_head">Фільтри</message>
+    <message key="xmlui.Discovery.SimpleSearch.filter_help">Використовуйте фільтри щоб покращити результати пошуку.</message>
+
+    <message key="xmlui.Discovery.SimpleSearch.filter.contains">Містить</message>
+    <message key="xmlui.Discovery.SimpleSearch.filter.equals">Точно</message>
+    <message key="xmlui.Discovery.SimpleSearch.filter.authority">ID</message>
+	<message key="xmlui.Discovery.SimpleSearch.filter.notcontains">Не містить</message>
+    <message key="xmlui.Discovery.SimpleSearch.filter.notequals">Не рівно</message>
+    <message key="xmlui.Discovery.SimpleSearch.filter.notauthority">Не ID</message>
+    
+    <message key="xmlui.Discovery.RelatedItems.head">Пов'язані матеріали</message>
+    <message key="xmlui.Discovery.RelatedItems.help">Показано матеріали по назві, автору, creator і предмету.</message>
+
+    <message key="xmlui.Discovery.AbstractSearch.head1_community">Показано {0} з {1} результатів всього для фонду: {2}. <span class="searchTime">({3} сек.)</span></message>
+   	<message key="xmlui.Discovery.AbstractSearch.head1_collection">Показано {0} з {1} результатів всього для колекції: {2}. <span class="searchTime">({3} сек.)</span></message>
+   	<message key="xmlui.Discovery.AbstractSearch.head1_none">Показано {0} з {1} результатів всього. <span class="searchTime">({2} сек.)</span></message>
+
+    <message key="xmlui.Discovery.AbstractSearch.head2">Фонди чи Колекції що відповідають Вашому запиту</message>
+   	<message key="xmlui.Discovery.AbstractSearch.head3">Матеріали, що відповідають Вашому запиту</message>
+
+   	<message key="xmlui.Discovery.SimpleSearch.did_you_mean">Чи Ви мали на увазі: </message>
 
 </catalogue>
