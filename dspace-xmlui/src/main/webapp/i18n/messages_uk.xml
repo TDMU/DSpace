@@ -824,7 +824,8 @@
 	<message key="xmlui.administrative.Navigation.context_export_item">Завантажити</message>
         <message key="xmlui.administrative.Navigation.context_export_collection">Експорт колекції</message>
         <message key="xmlui.administrative.Navigation.context_export_community">Експортувати фонд</message>
-        <message key="xmlui.administrative.Navigation.context_export_metadata">Метадані</message>
+        <message key="xmlui.administrative.Navigation.context_export_metadata">Експортувати метадані</message>
+        <message key="xmlui.administrative.Navigation.context_search_export_metadata">Експортувати метадані пошуку</message>
 	
 	<!-- Site administrator options -->
 	<message key="xmlui.administrative.Navigation.administrative_head">Адміністрування</message>
@@ -839,7 +840,12 @@
     <message key="xmlui.administrative.Navigation.administrative_withdrawn">Отримання елементів</message>
 	<message key="xmlui.administrative.Navigation.administrative_control_panel">Панель керування</message>
     <message key="xmlui.administrative.Navigation.statistics">Статистика</message>
-        <message key="xmlui.administrative.Navigation.administrative_import_metadata">Імпорт метаданих</message>
+    <message key="xmlui.administrative.Navigation.administrative_import_metadata">Імпорт метаданих</message>
+    
+    <message key="xmlui.administrative.Navigation.administrative_content">Керування контентом</message>
+    <message key="xmlui.administrative.Navigation.administrative_private">Приватні елементи</message>
+    <message key="xmlui.administrative.Navigation.administrative_batch_import">Пакетний імпорт (ZIP)</message>
+    <message key="xmlui.administrative.Navigation.administrative_curation">Завдання нагляду (curation)</message>
 
     <!-- my account items -->
 	<message key="xmlui.administrative.Navigation.account_export">Мої матеріали</message>
@@ -1752,6 +1758,10 @@
     <message key="xmlui.statistics.visits.cities">Найбільше переглядів з сайтів</message>
     <message key="xmlui.statistics.visits.bitstreams">Перегляди файлів</message>
     <message key="xmlui.statistics.Navigation.title">Статистика</message>
+    <message key="xmlui.statistics.Navigation.usage.view">Переглянути статистику використання</message>
+    <message key="xmlui.statistics.Navigation.usage-Elasticsearch.view">Переглянути статистику використання</message>
+    <message key="xmlui.statistics.Navigation.search.view">Переглянути статистику пошуку</message>
+    <message key="xmlui.statistics.Navigation.workflow.view">Переглянути статистику робочого процесу</message>
     <message key="xmlui.statistics.Navigation.view">Переглянути статистику</message>
     <message key="xmlui.statistics.trail">Статистика</message>
 
